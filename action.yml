@@ -1,0 +1,5 @@
+name: 'Page diff'
+description: 'Generate Storybook screenshots for visual testing'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
