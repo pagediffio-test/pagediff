@@ -9,8 +9,8 @@ export default async function launchBrowser(
 ): Promise<Browser> {
   const launchArgs: LaunchOptions = {
     headless: true,
-    executablePath:
-      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    // executablePath:
+    //   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     defaultViewport: {
       width: DEFAULT_VIEWPORT,
       height: 1024,

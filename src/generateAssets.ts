@@ -9,13 +9,17 @@ import setCurrentStory from "./utils/setCurrentStory";
 import setViewport from "./utils/setViewport";
 import StaticServer from "./utils/StaticServer";
 import StoryBrowser from "./utils/StoryBrowser";
+import { join } from "path";
 
 const debug = Debug("generateAssets");
 
 const POOL_SIZE = 3;
 let count = 0;
 
-export default async function generateAssets(builtPath: string) {
+export default async function generateAssets(
+  builtPath: string,
+  outputPath: string
+) {
   const server = new StaticServer(builtPath);
   const address = await server.start();
   const stories = await getStories(address);
@@ -43,7 +47,7 @@ export default async function generateAssets(builtPath: string) {
   );
 
   const start = Date.now();
-  await runTasks(workers, variants);
+  await runTasks(workers, variants, outputPath);
   await Promise.all(workers.map((worker) => worker.destroy()));
   server.close();
   console.log(Date.now() - start);
@@ -53,6 +57,7 @@ export default async function generateAssets(builtPath: string) {
 async function runTasks(
   workers: StoryBrowser[],
   variants: IStoryVariant[],
+  outputPath: string,
   maxRetries = 3
 ) {
   const tasks = variants.map((variant) => ({ retries: 0, variant }));
@@ -79,7 +84,10 @@ async function runTasks(
 
         await worker.waitBrowserMetricsStable("postEmit");
         const buffer = await getScreenshot(page, variant.story);
-        writeFileSync(`ret/${variant.story.id}-${variant.name}.png`, buffer);
+        writeFileSync(
+          join(outputPath, `${variant.story.id}-${variant.name}.png`),
+          buffer
+        );
         console.log(`Captured ${variant.story.id}(${variant.name})`);
         console.log(++count);
       } catch (err) {
