@@ -6,8 +6,8 @@ npm install
 
 mkdir /storybook-output
 
-echo "Running `npm run build-storybook -- -o /storybook-output`..."
-npm run build-storybook -- -o /storybook-output
+echo "Running `npm run build-storybook -- --loglevel warn -o /storybook-output`..."
+npm run build-storybook -- --loglevel warn -o /storybook-output
 
 echo "Generating screenshots from /storybook-output"
 mkdir /storybook-screenshots
