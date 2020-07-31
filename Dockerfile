@@ -1,4 +1,3 @@
-# Container image that runs your code
 FROM node:12
 
 RUN apt-get update -y
