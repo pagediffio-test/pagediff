@@ -14,7 +14,6 @@ import { join } from "path";
 const debug = Debug("generateAssets");
 
 const POOL_SIZE = 3;
-let count = 0;
 
 export default async function generateAssets(
   builtPath: string,
@@ -84,12 +83,14 @@ async function runTasks(
 
         await worker.waitBrowserMetricsStable("postEmit");
         const buffer = await getScreenshot(page, variant.story);
-        writeFileSync(
-          join(outputPath, `${variant.story.id}-${variant.name}.png`),
-          buffer
+        const targetPath = join(
+          outputPath,
+          `${variant.story.id}-${variant.name}.png`
         );
-        console.log(`Captured ${variant.story.id}(${variant.name})`);
-        console.log(++count);
+        writeFileSync(targetPath, buffer);
+        console.log(
+          `Captured ${variant.story.id}(${variant.name}) to ${targetPath}`
+        );
       } catch (err) {
         console.error(
           `Failed to capture story ${variant.story.id}(${variant.name}): ${err.message}`
