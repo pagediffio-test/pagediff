@@ -9,8 +9,9 @@ RUN apt-get install -yq gconf-service libasound2 libatk1.0-0 libc6 libcairo2 lib
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 COPY entrypoint.sh /entrypoint.sh
-
-RUN npm install -g storycap --unsafe-perm=true
+COPY package.json package-lock.json /pagediff/
+COPY src /pagediff/src/
+RUN cd /pagediff && npm install && npm run build
 
 # Code file to execute when the docker container starts up (`entrypoint.sh`)
 ENTRYPOINT ["/entrypoint.sh"]

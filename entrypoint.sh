@@ -10,4 +10,4 @@ echo "Running `npm run build-storybook -- -o /storybook-output`..."
 npm run build-storybook -- -o /storybook-output
 
 echo "Generating screenshots from /storybook-output"
-npx ts-node
+node /pagediff/dist/index.js /storybook-output
