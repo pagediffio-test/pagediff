@@ -6,10 +6,25 @@ import getScreenshot from "./utils/getScreenshot";
 import getStories from "./utils/getStories";
 import getVariants from "./utils/getVariants";
 import setCurrentStory from "./utils/setCurrentStory";
-import setViewport from "./utils/setViewport";
+import setViewport, { DEFAULT_VIEWPORT } from "./utils/setViewport";
 import StaticServer from "./utils/StaticServer";
 import StoryBrowser from "./utils/StoryBrowser";
+import { v4 } from "uuid";
 import { join } from "path";
+
+const getGitHubEnv = () => {
+  const keys = Object.keys(process.env).filter((key) =>
+    key.startsWith("GITHUB_")
+  );
+  const env = {};
+  keys.forEach((key) => {
+    env[key] = process.env[key];
+  });
+  return env;
+};
+
+const keyForVariant = (variant: IStoryVariant) =>
+  `${variant.story.id}|${variant.name}`;
 
 const debug = Debug("generateAssets");
 
@@ -24,32 +39,31 @@ export default async function generateAssets(
   const stories = await getStories(address);
 
   const variants = stories.flatMap(getVariants);
-  const map = {};
-  setInterval(() => {
-    if (Object.keys(map).length < 8) {
-      console.dir(map, { depth: 20 });
-    }
-  }, 15000);
-  variants.forEach((variant) => {
-    map[variant.story.id + "/" + variant.name] = {
-      browser: true,
-      page: true,
-      viewport: true,
-      currentStory: true,
-      screenshot: true,
-      release: true,
-    };
-  });
 
   const workers = await Promise.all(
     new Array(POOL_SIZE).fill(0).map((i) => new StoryBrowser(address).init())
   );
 
-  const start = Date.now();
-  await runTasks(workers, variants, outputPath);
+  const data = await runTasks(workers, variants, outputPath);
+  const pages = variants.map((variant) => {
+    const key = keyForVariant(variant);
+    const { html, screenshot, viewport } = data[key];
+    return {
+      story: { ...variant.story, version: "5" },
+      viewport,
+      screenshot,
+      html,
+    };
+  });
+
+  const metadata = {
+    env: getGitHubEnv(),
+    pages,
+  };
+
+  console.log(JSON.stringify(metadata));
   await Promise.all(workers.map((worker) => worker.destroy()));
   server.close();
-  console.log(Date.now() - start);
   process.exit(0);
 }
 
@@ -59,6 +73,10 @@ async function runTasks(
   outputPath: string,
   maxRetries = 3
 ) {
+  const data: {
+    [key: string]: { html: string; viewport: number; screenshot: string };
+  } = {};
+
   const tasks = variants.map((variant) => ({ retries: 0, variant }));
   const service = createExecutionService(
     workers,
@@ -70,7 +88,8 @@ async function runTasks(
           throw new Error("Page is not present.");
         }
 
-        await setViewport(page, variant.options.viewport);
+        const viewport = variant.options.viewport || DEFAULT_VIEWPORT;
+        await setViewport(page, viewport);
 
         worker.resourceWatcher?.clear();
         await setCurrentStory(page, variant.story);
@@ -82,15 +101,14 @@ async function runTasks(
         await worker.resourceWatcher?.waitForRequestsComplete();
 
         await worker.waitBrowserMetricsStable("postEmit");
+        const html = await worker.page!.content();
+
         const buffer = await getScreenshot(page, variant.story);
-        const targetPath = join(
-          outputPath,
-          `${variant.story.id}-${variant.name}.png`
-        );
+        const filename = `${v4()}-${Date.now()}.png`;
+        const targetPath = join(outputPath, filename);
         writeFileSync(targetPath, buffer);
-        console.log(
-          `Captured ${variant.story.id}(${variant.name}) to ${targetPath}`
-        );
+        data[keyForVariant(variant)] = { html, viewport, screenshot: filename };
+        console.log(`Captured ${filename}`);
       } catch (err) {
         console.error(
           `Failed to capture story ${variant.story.id}(${variant.name}): ${err.message}`
@@ -109,4 +127,6 @@ async function runTasks(
   } finally {
     service.close();
   }
+
+  return data;
 }
