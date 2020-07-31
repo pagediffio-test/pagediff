@@ -8,11 +8,12 @@ export default async function launchBrowser(
   retries: number = 1
 ): Promise<Browser> {
   const launchArgs: LaunchOptions = {
-    headless: false,
+    headless: true,
     executablePath:
       "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     defaultViewport: {
       width: DEFAULT_VIEWPORT,
+      height: 1024,
     },
     args: [
       "--disable-dev-shm-usage",
