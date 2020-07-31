@@ -9,7 +9,7 @@ RUN apt-get install -yq gconf-service libasound2 libatk1.0-0 libc6 libcairo2 lib
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 COPY entrypoint.sh /entrypoint.sh
-COPY package.json package-lock.json /pagediff/
+COPY package.json package-lock.json tsconfig.json /pagediff/
 COPY src /pagediff/src/
 RUN cd /pagediff && npm install && npm run build
 
