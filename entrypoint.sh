@@ -4,11 +4,22 @@ cd $GITHUB_WORKSPACE
 echo "Running `npm install`..."
 npm install
 
-mkdir /storybook-output
+mkdir $GITHUB_WORKSPACE/storybook-output
+cd $GITHUB_WORKSPACE/storybook-output
 
-echo "Running `npm run build-storybook -- --quiet -o /storybook-output`..."
-npm run build-storybook -- --quiet warn -o /storybook-output
+STORY_OUTPUT=$GITHUB_WORKSPACE/__pagediff__githubactions__/storybook-output
+SCREENSHOT_OUTPUT=$GITHUB_WORKSPACE/__pagediff__githubactions__/screenshot-output
 
-echo "Generating screenshots from /storybook-output to /storybook-screenshots"
-mkdir /storybook-screenshots
-node /pagediff/dist/index.js /storybook-output /storybook-screenshots
+echo `mkdir -p $STORY_OUTPUT`
+mkdir -p $STORY_OUTPUT
+
+echo "Running `npm run build-storybook -- --quiet -o $STORY_OUTPUT`..."
+npm run build-storybook -- --quiet warn -o $STORY_OUTPUT
+
+echo `mkdir -p $SCREENSHOT_OUTPUT`
+mkdir -p $SCREENSHOT_OUTPUT
+
+echo "Generating screenshots from $STORY_OUTPUT to $SCREENSHOT_OUTPUT"
+node /pagediff/dist/index.js $STORY_OUTPUT $SCREENSHOT_OUTPUT
+
+echo "::set-output name=screenshot-path::$SCREENSHOT_OUTPUT"
